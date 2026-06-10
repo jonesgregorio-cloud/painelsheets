@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PainelSheets</title>
+
+<!--
+=================================================================
+  PAINELSHEETS — CONFIGURAÇÃO
+=================================================================
+
+Preencha apenas as 2 variáveis abaixo:
+
+1. APPS_SCRIPT_URL → A URL gerada ao publicar o Apps Script
+   (começa com https://script.google.com/macros/s/...)
+
+2. SHEET_ID → O ID da sua planilha Google Sheets
+   (trecho entre /d/ e /edit na URL da planilha)
+
+A variável GOOGLE_CLIENT_ID não é mais necessária — pode ignorar.
+=================================================================
+-->
+
+<script>
+  const APPS_SCRIPT_URL = 'COLE_AQUI_A_URL_DO_APPS_SCRIPT';
+  const SHEET_ID        = 'COLE_AQUI_O_ID_DA_PLANILHA';
+</script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── LOGIN ─────────────────────────────────────────────── */
+#login-screen {
+  display: flex;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f7;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e5e5ea;
+  padding: 40px 36px;
+  width: 380px;
+  text-align: center;
+}
+
+.login-logo {
+  width: 56px; height: 56px;
+  background: #e8f0fe;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 28px;
+}
+
+.login-card h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+.login-card .login-sub {
+  font-size: 14px; color: #6e6e73;
+  margin-bottom: 28px; line-height: 1.5;
+}
+
+.login-form-label {
+  display: block; text-align: left;
+  font-size: 12px; font-weight: 500;
+  color: #3c3c43; margin-bottom: 5px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d1d6;
+  font-size: 14px;
+  color: #1d1d1f;
+  outline: none;
+  margin-bottom: 10px;
+  font-family: inherit;
+  transition: border-color .15s;
+}
+
+.login-input:focus { border-color: #1a73e8; }
+
+.login-hint {
+  font-size: 11px; color: #8e8e93;
+  margin-bottom: 20px; text-align: left;
+  line-height: 1.5;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  border: none;
+  background: #1a73e8;
+  color: #fff;
+  font-size: 14px; font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+  font-family: inherit;
+}
+
+.login-btn:hover { background: #1557b0; }
+.login-btn:disabled { background: #9dc3f7; cursor: not-allowed; }
+.login-error { font-size: 12px; color: #d93025; margin-top: 8px; min-height: 16px; }
+
+/* ── APP ────────────────────────────────────────────────── */
+#app { display: none; height: 100vh; }
+#app.visible { display: flex; }
+
+/* SIDEBAR */
+#sidebar {
+  width: 230px;
+  background: #fff;
+  border-right: 1px solid #e5e5ea;
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+}
+
+#sidebar-top { padding: 18px 16px 14px; border-bottom: 1px solid #e5e5ea; }
+
+#logo {
+  font-size: 16px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+
+#logo-icon {
+  width: 28px; height: 28px;
+  background: #e8f0fe; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+
+#user-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  background: #f5f5f7; border-radius: 10px;
+}
+
+#user-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #e8f0fe;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: #1a73e8;
+  flex-shrink: 0;
+}
+
+#user-name {
+  font-size: 12px; color: #3c3c43;
+  flex: 1; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+#logout-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; color: #8e8e93; padding: 2px; line-height: 1;
+}
+
+#logout-btn:hover { color: #3c3c43; }
+
+nav { padding: 10px 8px; flex: 1; overflow-y: auto; }
+
+.nav-label {
+  font-size: 10px; font-weight: 600; color: #8e8e93;
+  padding: 4px 10px 6px; letter-spacing: .05em; text-transform: uppercase;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 8px;
+  cursor: pointer; color: #3c3c43; font-size: 13px;
+  margin-bottom: 1px; transition: background .12s; user-select: none;
+}
+
+.nav-item:hover { background: #f5f5f7; }
+.nav-item.active { background: #e8f0fe; color: #1a73e8; font-weight: 500; }
+.nav-icon { font-size: 15px; flex-shrink: 0; }
+
+.nav-badge {
+  margin-left: auto; font-size: 10px; font-weight: 600;
+  padding: 1px 6px; border-radius: 20px;
+  background: #e8f0fe; color: #1a73e8;
+}
+.nav-badge.amber { background: #fef3cd; color: #92600a; }
+.nav-badge.green { background: #d4edda; color: #1a6130; }
+
+#admin-btn {
+  margin: 8px; padding: 8px 10px; border-radius: 8px;
+  border: 1px dashed #d1d1d6; cursor: pointer;
+  background: transparent; color: #6e6e73; font-size: 12px;
+  display: none; align-items: center; gap: 6px;
+  transition: background .12s; width: calc(100% - 16px);
+  font-family: inherit;
+}
+#admin-btn:hover { background: #f5f5f7; }
+#admin-btn.visible { display: flex; }
+
+/* MAIN */
+#main {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; background: #f5f5f7;
+}
+
+#topbar {
+  padding: 12px 20px; background: #fff;
+  border-bottom: 1px solid #e5e5ea;
+  display: flex; align-items: center; gap: 12px;
+}
+
+#page-title { font-size: 16px; font-weight: 600; flex: 1; }
+
+#search-wrap { position: relative; max-width: 280px; flex: 1; }
+#search-icon {
+  position: absolute; left: 10px; top: 50%;
+  transform: translateY(-50%); color: #8e8e93;
+  pointer-events: none; font-size: 14px;
+}
+
+#search {
+  width: 100%; padding: 7px 10px 7px 30px;
+  border-radius: 8px; border: 1px solid #e5e5ea;
+  background: #f5f5f7; font-size: 13px; color: #1d1d1f;
+  outline: none; font-family: inherit;
+}
+#search:focus { border-color: #1a73e8; background: #fff; }
+
+#content { flex: 1; overflow-y: auto; padding: 18px 20px; }
+
+.section-label {
+  font-size: 11px; font-weight: 600; color: #8e8e93;
+  margin-bottom: 10px; letter-spacing: .04em; text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px; margin-bottom: 22px;
+}
+
+/* CARDS */
+.card {
+  background: #fff; border: 1px solid #e5e5ea;
+  border-radius: 12px; padding: 14px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.card:hover { border-color: #d1d1d6; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+
+.card-top {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 10px;
+}
+
+.cat-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+
+.card-actions { display: flex; gap: 2px; }
+
+.icon-btn {
+  width: 26px; height: 26px; border-radius: 6px; border: none;
+  background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #8e8e93; font-size: 14px;
+  transition: background .12s, color .12s;
+}
+.icon-btn:hover { background: #f5f5f7; color: #1d1d1f; }
+.icon-btn.fav-on { color: #f4a100; }
+.icon-btn.fin-on { color: #30a85e; }
+
+.card-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; line-height: 1.35; }
+.card-desc { font-size: 11px; color: #6e6e73; line-height: 1.45; margin-bottom: 10px; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; }
+
+.cat-tag { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+.new-badge {
+  font-size: 9px; font-weight: 600; padding: 1px 5px;
+  border-radius: 20px; background: #e8f0fe; color: #1a73e8;
+  margin-left: 5px; vertical-align: middle;
+}
+
+.open-btn {
+  font-size: 11px; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid #e5e5ea; background: transparent;
+  cursor: pointer; color: #3c3c43;
+  display: flex; align-items: center; gap: 4px;
+  transition: background .12s; text-decoration: none; font-family: inherit;
+}
+.open-btn:hover { background: #f5f5f7; }
+
+/* LIST ROW */
+.list-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: #fff;
+  border: 1px solid #e5e5ea; border-radius: 10px;
+  margin-bottom: 6px; transition: border-color .15s;
+}
+.list-row:hover { border-color: #d1d1d6; }
+.list-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.list-name { flex: 1; font-size: 13px; }
+.list-cat { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; flex-shrink: 0; }
+
+/* EMPTY */
+.empty { text-align: center; padding: 50px 20px; color: #8e8e93; }
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty p { font-size: 13px; line-height: 1.6; }
+
+/* LOADING */
+.loading { text-align: center; padding: 40px; color: #8e8e93; font-size: 13px; }
+
+/* MODAL */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.35); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.overlay.open { display: flex; }
+
+.modal {
+  background: #fff; border-radius: 16px;
+  border: 1px solid #e5e5ea; padding: 24px;
+  width: 420px; max-width: 90vw; position: relative; z-index: 1;
+}
+
+.modal-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 4px;
+}
+.modal h3 { font-size: 16px; font-weight: 600; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: #8e8e93; line-height: 1;
+}
+.modal p { font-size: 13px; color: #6e6e73; margin-bottom: 16px; }
+
+.form-group { margin-bottom: 12px; }
+.form-group label {
+  display: block; font-size: 12px; font-weight: 500;
+  color: #3c3c43; margin-bottom: 5px;
+}
+.form-group input,
+.form-group select {
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid #d1d1d6; background: #fff;
+  font-size: 13px; color: #1d1d1f; outline: none; font-family: inherit;
+}
+.form-group input:focus,
+.form-group select:focus { border-color: #1a73e8; }
+
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+.btn-primary {
+  padding: 8px 18px; border-radius: 8px; border: none;
+  background: #1a73e8; color: #fff; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .12s; font-family: inherit;
+}
+.btn-primary:hover { background: #1557b0; }
+.btn-primary:disabled { background: #9dc3f7; cursor: not-allowed; }
+
+.btn-cancel {
+  padding: 8px 14px; border-radius: 8px;
+  border: 1px solid #d1d1d6; background: transparent;
+  color: #3c3c43; font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.btn-cancel:hover { background: #f5f5f7; }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1d1d1f; color: #fff;
+  padding: 10px 18px; border-radius: 20px;
+  font-size: 13px; z-index: 999;
+  transition: transform .25s ease; pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ TELA DE LOGIN ════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">📊</div>
+    <h1>PainelSheets</h1>
+    <p class="login-sub">Todas as planilhas do seu time em um só lugar.</p>
+
+    <label class="login-form-label" for="input-nome">Seu nome completo</label>
+    <input class="login-input" id="input-nome" type="text"
+           placeholder="Ex: João Silva" autocomplete="name" maxlength="60">
+
+    <label class="login-form-label" for="input-email">Seu e-mail corporativo</label>
+    <input class="login-input" id="input-email" type="email"
+           placeholder="Ex: joao.silva@empresa.com" autocomplete="email" maxlength="80">
+
+    <p class="login-hint">
+      Use sempre o mesmo e-mail para manter suas preferências salvas
+      (favoritos, finalizadas, recentes) em qualquer computador.
+    </p>
+
+    <button class="login-btn" id="login-btn">Entrar no painel →</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ═══ APLICATIVO ══════════════════════════════════════ -->
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-top">
+      <div id="logo">
+        <div id="logo-icon">📊</div>
+        PainelSheets
+      </div>
+      <div id="user-pill">
+        <div id="user-avatar"></div>
+        <span id="user-name">—</span>
+        <button id="logout-btn" title="Sair">✕</button>
+      </div>
+    </div>
+
+    <nav>
+      <div class="nav-label">Meu painel</div>
+      <div class="nav-item active" data-view="novas">
+        <span class="nav-icon">✨</span> Novas
+        <span class="nav-badge" id="badge-novas">0</span>
+      </div>
+      <div class="nav-item" data-view="recentes">
+        <span class="nav-icon">🕐</span> Recentes
+      </div>
+      <div class="nav-item" data-view="favoritas">
+        <span class="nav-icon">⭐</span> Favoritas
+        <span class="nav-badge amber" id="badge-fav">0</span>
+      </div>
+      <div class="nav-item" data-view="finalizadas">
+        <span class="nav-icon">✅</span> Finalizadas
+        <span class="nav-badge green" id="badge-fin">0</span>
+      </div>
+      <div class="nav-label" style="margin-top:8px">Explorar</div>
+      <div class="nav-item" data-view="todas">
+        <span class="nav-icon">📋</span> Todas as planilhas
+      </div>
+    </nav>
+
+    <button id="admin-btn">⚙️ Área do administrador</button>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <span id="page-title">Novas</span>
+      <div id="search-wrap">
+        <span id="search-icon">🔍</span>
+        <input id="search" type="text" placeholder="Buscar planilha...">
+      </div>
+    </div>
+    <div id="content">
+      <div class="loading">Carregando planilhas...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL ADMIN ══════════════════════════════════════ -->
+<div class="overlay" id="modal-admin">
+  <div style="position:absolute;inset:0" id="modal-bg"></div>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Adicionar planilha</h3>
+      <button class="modal-close" id="close-modal">✕</button>
+    </div>
+    <p>A planilha aparecerá automaticamente no menu "Novas" para todos os usuários.</p>
+    <div class="form-group">
+      <label>Nome da planilha *</label>
+      <input id="f-nome" type="text" placeholder="Ex: Controle de Estoque — Julho">
+    </div>
+    <div class="form-group">
+      <label>Descrição</label>
+      <input id="f-desc" type="text" placeholder="Ex: Preenchimento semanal pelo time de logística">
+    </div>
+    <div class="form-group">
+      <label>Categoria</label>
+      <select id="f-cat">
+        <option>RH</option>
+        <option>Financeiro</option>
+        <option>Operacional</option>
+        <option>Logística</option>
+        <option>Comercial</option>
+        <option>TI</option>
+        <option>Geral</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Link do Google Sheets *</label>
+      <input id="f-link" type="url" placeholder="https://docs.google.com/spreadsheets/d/...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancel-modal">Cancelar</button>
+      <button class="btn-primary" id="save-btn">Adicionar planilha</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CORES POR CATEGORIA
+// ═══════════════════════════════════════════════════════
+const CAT = {
+  RH:          { bg:'#fff0f6', tx:'#862e5e', dot:'#d4538a' },
+  Financeiro:  { bg:'#f0faf4', tx:'#1a5e33', dot:'#30a85e' },
+  Operacional: { bg:'#edf4fe', tx:'#1a4b8c', dot:'#3b82e8' },
+  Logística:   { bg:'#fffbeb', tx:'#7a4b0a', dot:'#f59e0b' },
+  Comercial:   { bg:'#f3f0ff', tx:'#4c2c96', dot:'#7c5ce8' },
+  TI:          { bg:'#edfaf5', tx:'#0b5940', dot:'#10b981' },
+  Geral:       { bg:'#f5f5f7', tx:'#444444', dot:'#8e8e93' },
+};
+const gc = cat => CAT[cat] || CAT.Geral;
+
+// ═══════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════
+let currentUser  = null;   // { nome, email, initials }
+let isAdmin      = false;
+let allSheets    = [];
+let prefs        = { favoritas: new Set(), finalizadas: new Set(), recentes: [] };
+let currentView  = 'novas';
+let searchQ      = '';
+let savingPrefs  = false;
+const DEMO_MODE  = !APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('COLE_AQUI');
+
+// ═══════════════════════════════════════════════════════
+//  API — APPS SCRIPT
+// ═══════════════════════════════════════════════════════
+async function api(params) {
+  const url = new URL(APPS_SCRIPT_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, String(v)));
+  const res = await fetch(url.toString());
+  return res.json();
+}
+
+async function loadSheets() {
+  const d = await api({ action:'getPlanilhas' });
+  if (d.ok) allSheets = d.data;
+}
+
+async function loadPrefs(email) {
+  const d = await api({ action:'getPreferencias', email });
+  if (d.ok) {
+    prefs.favoritas   = new Set(d.favoritas.filter(Boolean));
+    prefs.finalizadas = new Set(d.finalizadas.filter(Boolean));
+    prefs.recentes    = d.recentes.filter(Boolean);
+  }
+}
+
+async function savePrefs() {
+  if (savingPrefs || DEMO_MODE) return;
+  savingPrefs = true;
+  try {
+    await api({
+      action:      'savePreferencias',
+      email:       currentUser.email,
+      favoritas:   [...prefs.favoritas].join(','),
+      finalizadas: [...prefs.finalizadas].join(','),
+      recentes:    prefs.recentes.join(',')
+    });
+  } finally { savingPrefs = false; }
+}
+
+async function checkAdmin(email) {
+  if (DEMO_MODE) { isAdmin = true; return; }
+  const d = await api({ action:'isAdmin', email });
+  isAdmin = d.ok && d.isAdmin;
+}
+
+// ═══════════════════════════════════════════════════════
+//  LOGIN
+// ═══════════════════════════════════════════════════════
+function initials(nome) {
+  return nome.trim().split(/\s+/).map(w => w[0].toUpperCase()).slice(0,2).join('');
+}
+
+document.getElementById('login-btn').addEventListener('click', doLogin);
+document.getElementById('input-email').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('input-nome').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('input-email').focus(); });
+
+function doLogin() {
+  const nome  = document.getElementById('input-nome').value.trim();
+  const email = document.getElementById('input-email').value.trim().toLowerCase();
+  const err   = document.getElementById('login-error');
+
+  if (!nome)  { err.textContent = 'Por favor, informe seu nome.'; return; }
+  if (!email || !email.includes('@')) { err.textContent = 'Por favor, informe um e-mail válido.'; return; }
+  err.textContent = '';
+
+  currentUser = { nome, email, initials: initials(nome) };
+
+  // Salvar localmente para próxima visita (mesmo navegador)
+  try { localStorage.setItem('ps_user', JSON.stringify(currentUser)); } catch(e) {}
+
+  enterApp();
+}
+
+async function enterApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  // Avatar
+  const av = document.getElementById('user-avatar');
+  av.textContent = currentUser.initials;
+  document.getElementById('user-name').textContent = currentUser.nome;
+
+  document.getElementById('content').innerHTML = '<div class="loading">Carregando planilhas...</div>';
+
+  if (DEMO_MODE) {
+    loadDemoData();
+    showToast('Modo demonstração ativo — configure as variáveis no HTML para usar com dados reais');
+    return;
+  }
+
+  try {
+    await Promise.all([
+      loadSheets(),
+      loadPrefs(currentUser.email),
+      checkAdmin(currentUser.email)
+    ]);
+    if (isAdmin) document.getElementById('admin-btn').classList.add('visible');
+    render();
+  } catch(e) {
+    loadDemoData();
+    showToast('Não foi possível conectar ao servidor — verifique a URL do Apps Script');
+  }
+}
+
+// Verificar se há sessão salva no navegador
+window.addEventListener('load', () => {
+  try {
+    const saved = localStorage.getItem('ps_user');
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      document.getElementById('input-nome').value  = currentUser.nome;
+      document.getElementById('input-email').value = currentUser.email;
+    }
+  } catch(e) {}
+});
+
+// Logout
+document.getElementById('logout-btn').addEventListener('click', () => {
+  try { localStorage.removeItem('ps_user'); } catch(e) {}
+  currentUser = null; isAdmin = false;
+  allSheets = []; prefs = { favoritas: new Set(), finalizadas: new Set(), recentes: [] };
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('input-nome').value  = '';
+  document.getElementById('input-email').value = '';
+});
+
+// ═══════════════════════════════════════════════════════
+//  DADOS DE DEMONSTRAÇÃO
+// ═══════════════════════════════════════════════════════
+function loadDemoData() {
+  allSheets = [
+    { id:'1', nome:'Controle de Ponto — Junho',     descricao:'Registro diário de horas por colaborador',        categoria:'RH',          link:'#', nova:true  },
+    { id:'2', nome:'Orçamento Q3 2025',             descricao:'Planejamento de verbas por área',                  categoria:'Financeiro',  link:'#', nova:true  },
+    { id:'3', nome:'Pedidos Pendentes',             descricao:'Pedidos em aberto com fornecedores',               categoria:'Logística',   link:'#', nova:true  },
+    { id:'4', nome:'Pipeline Comercial',            descricao:'Oportunidades de venda ativas por vendedor',       categoria:'Comercial',   link:'#', nova:false },
+    { id:'5', nome:'Chamados de TI',                descricao:'Registro e status de chamados internos',           categoria:'TI',          link:'#', nova:false },
+    { id:'6', nome:'Inventário de Equipamentos',    descricao:'Lista de ativos físicos por setor',                categoria:'Operacional', link:'#', nova:false },
+    { id:'7', nome:'Avaliações de Desempenho',      descricao:'Resultados do ciclo semestral de avaliações',      categoria:'RH',          link:'#', nova:false },
+  ];
+  isAdmin = true;
+  document.getElementById('admin-btn').classList.add('visible');
+  render();
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDERIZAÇÃO
+// ═══════════════════════════════════════════════════════
+function filteredSheets() {
+  let list = [];
+  if      (currentView === 'novas')      list = allSheets.filter(s => s.nova);
+  else if (currentView === 'recentes')   list = prefs.recentes.map(id => allSheets.find(s => s.id===id)).filter(Boolean);
+  else if (currentView === 'favoritas')  list = allSheets.filter(s => prefs.favoritas.has(s.id));
+  else if (currentView === 'finalizadas')list = allSheets.filter(s => prefs.finalizadas.has(s.id));
+  else                                   list = [...allSheets];
+
+  if (searchQ) list = list.filter(s =>
+    s.nome.toLowerCase().includes(searchQ) ||
+    (s.descricao||'').toLowerCase().includes(searchQ) ||
+    s.categoria.toLowerCase().includes(searchQ)
+  );
+  return list;
+}
+
+function cardHTML(s) {
+  const c = gc(s.categoria);
+  const isFav = prefs.favoritas.has(s.id);
+  const isFin = prefs.finalizadas.has(s.id);
+  return `<div class="card">
+    <div class="card-top">
+      <div class="cat-icon" style="background:${c.bg}">📄</div>
+      <div class="card-actions">
+        <button class="icon-btn ${isFav?'fav-on':''}" data-action="fav" data-id="${s.id}" title="${isFav?'Remover favorito':'Favoritar'}">⭐</button>
+        <button class="icon-btn ${isFin?'fin-on':''}" data-action="fin" data-id="${s.id}" title="${isFin?'Reativar':'Marcar como finalizada'}">✅</button>
+      </div>
+    </div>
+    <div class="card-title">${s.nome}${s.nova?'<span class="new-badge">nova</span>':''}</div>
+    <div class="card-desc">${s.descricao||'Sem descrição'}</div>
+    <div class="card-footer">
+      <span class="cat-tag" style="background:${c.bg};color:${c.tx}">${s.categoria}</span>
+      <a class="open-btn" href="${s.link}" target="_blank" rel="noopener"
+         data-action="open" data-id="${s.id}">🔗 Abrir</a>
+    </div>
+  </div>`;
+}
+
+function listRowHTML(s) {
+  const c = gc(s.categoria);
+  return `<div class="list-row">
+    <div class="list-dot" style="background:${c.dot}"></div>
+    <span class="list-name">${s.nome}</span>
+    <span class="list-cat" style="background:${c.bg};color:${c.tx}">${s.categoria}</span>
+    <button class="icon-btn fin-on" data-action="fin" data-id="${s.id}" title="Reativar">↩</button>
+    <a class="open-btn" href="${s.link}" target="_blank" rel="noopener"
+       data-action="open" data-id="${s.id}">🔗 Abrir</a>
+  </div>`;
+}
+
+const EMPTY_MSG = {
+  novas:       { icon:'✨', msg:'Nenhuma planilha nova no momento.<br>O administrador adicionará novas planilhas aqui.' },
+  recentes:    { icon:'🕐', msg:'Você ainda não abriu nenhuma planilha.<br>Clique em "Abrir" em qualquer card para registrar.' },
+  favoritas:   { icon:'⭐', msg:'Nenhuma planilha favorita ainda.<br>Clique na estrela ⭐ em qualquer card para favoritar.' },
+  finalizadas: { icon:'✅', msg:'Nenhuma planilha finalizada ainda.<br>Clique no ✅ em qualquer card para marcar como finalizada.' },
+  todas:       { icon:'📋', msg:'Nenhuma planilha encontrada.' },
+};
+
+const TITLES = { novas:'Novas', recentes:'Recentes', favoritas:'Favoritas', finalizadas:'Finalizadas', todas:'Todas as planilhas' };
+
+function render() {
+  const list = filteredSheets();
+
+  document.getElementById('page-title').textContent = TITLES[currentView];
+  document.querySelectorAll('.nav-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.view === currentView)
+  );
+  document.getElementById('badge-novas').textContent = allSheets.filter(s => s.nova).length;
+  document.getElementById('badge-fav').textContent   = prefs.favoritas.size;
+  document.getElementById('badge-fin').textContent   = prefs.finalizadas.size;
+
+  const content = document.getElementById('content');
+
+  if (!list.length) {
+    const e = EMPTY_MSG[currentView];
+    content.innerHTML = `<div class="empty"><div class="empty-icon">${e.icon}</div><p>${e.msg}</p></div>`;
+    return;
+  }
+
+  if (currentView === 'finalizadas') {
+    content.innerHTML =
+      `<div class="section-label">${list.length} planilha${list.length>1?'s':''} finalizada${list.length>1?'s':''}</div>` +
+      list.map(listRowHTML).join('');
+    return;
+  }
+
+  if (currentView === 'todas') {
+    const cats = [...new Set(list.map(s => s.categoria))];
+    content.innerHTML = cats.map(cat => {
+      const group = list.filter(s => s.categoria === cat);
+      return `<div class="section-label">${cat}</div><div class="grid">${group.map(cardHTML).join('')}</div>`;
+    }).join('');
+    return;
+  }
+
+  content.innerHTML = `<div class="grid">${list.map(cardHTML).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  INTERAÇÕES — cards
+// ═══════════════════════════════════════════════════════
+document.getElementById('content').addEventListener('click', async e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const { action, id } = el.dataset;
+
+  if (action === 'fav') {
+    if (prefs.favoritas.has(id)) { prefs.favoritas.delete(id); showToast('Removido dos favoritos'); }
+    else                         { prefs.favoritas.add(id);    showToast('Adicionado aos favoritos ⭐'); }
+    render(); savePrefs();
+  }
+
+  if (action === 'fin') {
+    if (prefs.finalizadas.has(id)) { prefs.finalizadas.delete(id); showToast('Planilha reativada'); }
+    else                           { prefs.finalizadas.add(id);    showToast('Marcada como finalizada ✅'); }
+    render(); savePrefs();
+  }
+
+  if (action === 'open') {
+    prefs.recentes = prefs.recentes.filter(x => x !== id);
+    prefs.recentes.unshift(id);
+    if (prefs.recentes.length > 10) prefs.recentes.pop();
+    savePrefs();
+  }
+});
+
+// Navegação
+document.querySelectorAll('.nav-item').forEach(el =>
+  el.addEventListener('click', () => { currentView = el.dataset.view; render(); })
+);
+
+// Busca
+document.getElementById('search').addEventListener('input', e => {
+  searchQ = e.target.value.toLowerCase().trim(); render();
+});
+
+// ═══════════════════════════════════════════════════════
+//  MODAL ADMIN
+// ═══════════════════════════════════════════════════════
+const openModal  = () => document.getElementById('modal-admin').classList.add('open');
+const closeModal = () => document.getElementById('modal-admin').classList.remove('open');
+
+document.getElementById('admin-btn').addEventListener('click', openModal);
+document.getElementById('close-modal').addEventListener('click', closeModal);
+document.getElementById('cancel-modal').addEventListener('click', closeModal);
+document.getElementById('modal-bg').addEventListener('click', closeModal);
+
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const nome = document.getElementById('f-nome').value.trim();
+  const desc = document.getElementById('f-desc').value.trim();
+  const cat  = document.getElementById('f-cat').value;
+  const link = document.getElementById('f-link').value.trim();
+
+  if (!nome) { showToast('Informe o nome da planilha'); return; }
+  if (!link) { showToast('Informe o link da planilha'); return; }
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  if (DEMO_MODE) {
+    allSheets.unshift({ id: Date.now().toString(), nome, descricao: desc||'Sem descrição', categoria: cat, link, nova: true });
+  } else {
+    await api({ action:'addPlanilha', nome, descricao: desc, categoria: cat, link });
+    await loadSheets();
+  }
+
+  btn.disabled = false; btn.textContent = 'Adicionar planilha';
+  document.getElementById('f-nome').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-link').value = '';
+  closeModal();
+  currentView = 'novas';
+  render();
+  showToast('Planilha adicionada com sucesso! ✅');
+});
+
+// ═══════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
